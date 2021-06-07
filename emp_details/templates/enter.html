@@ -1,0 +1,204 @@
+{% extends 'index.html' %}
+{% load static %}
+
+{% block title %}CRUD{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1>CRUD</h1>
+    <div class="row">
+      <div class="col-md-4 ">
+        <h3>ADD EMPLOYEE</h3>
+        <form id="addUser" action="">
+          <div class="form-group">
+            <input class="form-control" type="text" name="name" placeholder="Name" required>
+          </div>
+          <div class="form-group">
+            <input class="form-control" type="number" name="roll_no" placeholder="Roll number" required>
+          </div>
+          <div class="form-group">
+            <input class="form-control" type="text" name="class_name"  placeholder="Class" required>
+          </div>
+          <button class="btn btn-primary form-control" type="submit">SUBMIT</button>
+        </form>
+      </div>
+      <div class="col-md-8">
+        <h3>EMPLOYEES</h3>
+        <table id="userTable" class="table table-striped">
+          <tr>
+            <th>Name</th>
+            <th>Roll No</th>
+            <th>Standard</th>
+          </tr>
+          {% if users %}
+          {% for user in users %}
+          <tr id="user-{{user.id}}">
+              <td class="userName userData" name="name">{{user.name}}</td>
+              <td class="userroll_no userData" name="roll_no">{{user.roll_no}}</td>
+              <td class="userclass_name userData" name="class_name">{{user.class_name}}</td>
+              <td align="center">
+                  <button class="btn btn-success form-control" onClick="editUser({{user.id}})" data-toggle="modal" data-target="#myModal")">EDIT</button>
+              </td>
+              <td align="center">
+                  <button class="btn btn-danger form-control" onClick="deleteUser({{user.id}})">DELETE</button>
+              </td>
+          </tr>
+          {% endfor %}
+          {% else %}
+            No Users
+          {% endif %}
+        </table>
+      </div>
+    </div>
+  </div>
+  <!-- Modal -->
+  <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+          <h4 class="modal-title" id="myModalLabel">Update</h4>
+        </div>
+        <form id="updateUser" action="">
+
+        <div class="modal-body">
+            <input class="form-control" id="form-id" type="hidden" name="formId"/>
+            <label for="name">Name</label>
+            <input class="form-control" id="form-name" type="text" name="formName"/>
+            <label for="address">Roll No.</label>
+            <input class="form-control" id="form-address" type="text" value="" name="formroll_no"/>
+            <label for="age">Standard</label>
+            <input class="form-control" id="form-age" type="number" name="formclass_name" min=10 max=100/>
+        </div>
+        <div class="modal-footer">
+            <button type="submit" class="btn btn-primary" >Save changes</button>
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}
+{% block javascript %}
+<script>
+// Create Django Ajax Call
+$("form#addUser").submit(function() {
+    var nameInput = $('input[name="name"]').val().trim();
+    var roll_noInput = $('input[name="roll_no"]').val().trim();
+    var class_nameInput = $('input[name="class_name"]').val().trim();
+    if (nameInput && roll_noInput && class_nameInput) {
+        // Create Ajax Call
+        $.ajax({
+            url: '{% url "crud_create" %}',
+            data: {
+                'name': nameInput,
+                'roll_no': roll_noInput,
+                'class_name': class_nameInput
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.user) {
+                  appendToUsrTable(data.user);
+                }
+            }
+        });
+      } else {
+        alert("All fields must have a valid value.");
+    }
+    $('form#addUser').trigger("reset");
+    return false;
+});
+function appendToUsrTable(user) {
+  $("#userTable > tbody:last-child").append(`
+        <tr id="user-${user.id}">
+            <td class="userName" name="name">${user.name}</td>
+            '<td class="userroll_no" name="roll_no">${user.roll_no}</td>
+            '<td class="userclass_name" name="class_name">${user.class_name}</td>
+            '<td align="center">
+                <button class="btn btn-success form-control" onClick="editUser(${user.id})" data-toggle="modal" data-target="#myModal")">EDIT</button>
+            </td>
+            <td align="center">
+                <button class="btn btn-danger form-control" onClick="deleteUser(${user.id})">DELETE</button>
+            </td>
+        </tr>
+    `);
+}
+
+// Create Django Ajax Call
+$("form#updateUser").submit(function() {
+    var idInput = $('input[name="formId"]').val().trim();
+    var nameInput = $('input[name="formName"]').val().trim();
+    var roll_noInput = $('input[name="formroll_no"]').val().trim();
+    var class_nameInput = $('input[name="formclass_name"]').val().trim();
+    if (nameInput && roll_noInput && class_nameInput) {
+        // Create Ajax Call
+        $.ajax({
+            url: '{% url "crud_update" %}',
+            data: {
+                'id': idInput,
+                'name': nameInput,
+                'roll_no': roll_noInput,
+                'class_name': class_nameInput
+            },
+            dataType: 'json',
+            success: function (data) {
+                if (data.user) {
+                  updateToUserTabel(data.user);
+                }
+            }
+        });
+       } else {
+        alert("All fields must have a valid value.");
+    }
+    $('form#updateUser').trigger("reset");
+    $('#myModal').modal('hide');
+    return false;
+});
+
+// Update Django Ajax Call
+function editUser(id) {
+  if (id) {
+    tr_id = "#user-" + id;
+    name = $(tr_id).find(".userName").text();
+    roll_no = $(tr_id).find(".userroll_no").text();
+    class_name = $(tr_id).find(".userclass_name").text();
+    $('#form-id').val(id);
+    $('#form-name').val(name);
+    $('#form-address').val(roll_no);
+    $('#form-age').val(class_name);
+  }
+}
+function updateToUserTabel(user){
+    $("#userTable #user-" + user.id).children(".userData").each(function() {
+        var attr = $(this).attr("name");
+        console.log(user)
+        if (attr == "name") {
+          $(this).text(user.name);
+        } else if (attr == "roll_no") {
+          $(this).text(user.roll_no);
+        } else {
+          $(this).text(user.class_name);
+        }
+      });
+}
+
+// Delete Django Ajax Call
+function deleteUser(id) {
+  var action = confirm("Are you sure you want to delete this user?");
+  if (action != false) {
+    $.ajax({
+        url: '{% url "crud_delete" %}',
+        data: {
+            'id': id,
+        },
+        dataType: 'json',
+        success: function (data) {
+            if (data.deleted) {
+              $("#userTable #user-" + id).remove();
+            }
+        }
+    });
+  }
+}
+</script>
+{% endblock javascript %}
